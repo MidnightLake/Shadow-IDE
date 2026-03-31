@@ -1,0 +1,77 @@
+[package]
+name = "shadow-ide"
+version = "0.84.0"
+description = "ShadowIDE - A Rust-based IDE"
+authors = ["ShadowBunny"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.81"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+anyhow = "1.0"
+log = "0.4"
+tauri = { version = "2.10.3", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+notify = { version = "7", features = ["serde"] }
+portable-pty = "0.8"
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "io-util", "net", "time", "macros", "process", "fs"] }
+tokio-tungstenite = "0.26"
+futures-util = "0.3"
+dirs-next = "2.0"
+reqwest = { version = "0.12", features = ["json", "stream", "blocking"] }
+uuid = { version = "1", features = ["v4"] }
+rcgen = { version = "0.13", features = ["pem"] }
+rustls = { version = "0.23", features = ["ring"] }
+rustls-pemfile = "2"
+tokio-rustls = "0.26"
+base64 = "0.22"
+qrcode = "0.14"
+local-ip-address = "0.6"
+sha2 = "0.10"
+snow = "0.9"
+sysinfo = "0.33"
+libc = "0.2"
+rusqlite = { version = "0.32", features = ["bundled"] }
+meval = "0.2"
+flate2 = "1"
+
+# FerrumChat integration (local crates)
+ferrum-core = { path = "crates/ferrum-core" }
+ferrum-llm = { path = "crates/ferrum-llm" }
+ferrum-sessions = { path = "crates/ferrum-sessions" }
+editor-hot-reload = { path = "../native/crates/editor-hot-reload" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+bluer = { version = "0.17", features = ["bluetoothd", "l2cap"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.dev]
+debug = 0
+
+[profile.dev.package."*"]
+debug = 0
+
+[profile.release]
+debug = 0
+incremental = false
+strip = "debuginfo"

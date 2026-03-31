@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>ShadowIDE</title>
+    <script>
+      // Mock Tauri IPC to prevent crashes in mobile WebView
+      // Only mock if not in real Tauri environment
+      if (!window.__TAURI_INTERNALS__ && !window.__TAURI_IPC__ && !navigator.userAgent.includes('Tauri')) {
+        window.__TAURI_INTERNALS__ = {
+          invoke: function(cmd, args) {
+            console.log("Mocked invoke:", cmd, args);
+            // Return empty/dummy data so app doesn't break
+            if (cmd === "read_directory") return Promise.resolve([]);
+            if (cmd === "check_engine") return Promise.resolve({ installed: false, version: "", backend: "" });
+            if (cmd === "detect_recommended_backend") return Promise.resolve("cpu");
+            if (cmd === "list_installed_engines") return Promise.resolve([]);
+            if (cmd === "get_llm_server_status") return Promise.resolve({ running: false, port: 8080 });
+            if (cmd === "get_hardware_info") return Promise.resolve({ cpu_cores: 4, ram_gb: 8, has_gpu: false, gpus: [] });
+            if (cmd === "get_home_dir") return Promise.resolve("/");
+            return Promise.resolve(null);
+          },
+          plugins: {
+            event: {
+              listen: function() { return Promise.resolve(function(){}); },
+              unlisten: function() { return Promise.resolve(); },
+              emit: function() { return Promise.resolve(); }
+            }
+          }
+        };
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

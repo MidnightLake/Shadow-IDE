@@ -1,0 +1,19 @@
+[package]
+name = "editor-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+egui = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-cpp = "0.22"
+editor-ai = { path = "../editor-ai" }
+editor-assets = { path = "../editor-assets" }
+editor-build = { path = "../editor-build" }
+editor-core = { path = "../editor-core" }
+editor-hot-reload = { path = "../editor-hot-reload" }
+editor-lsp-client = { path = "../editor-lsp-client" }
+editor-renderer = { path = "../editor-renderer" }

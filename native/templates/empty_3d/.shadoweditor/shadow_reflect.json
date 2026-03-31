@@ -1,0 +1,59 @@
+{
+  "components": [
+    {
+      "name": "Transform",
+      "properties": [
+        {
+          "name": "position",
+          "ty": "float[3]",
+          "metadata": "display_name=Position, step=0.1"
+        },
+        {
+          "name": "rotation",
+          "ty": "float[4]",
+          "metadata": "display_name=Rotation (Quaternion), step=0.01, tooltip=XYZW quaternion"
+        },
+        {
+          "name": "scale",
+          "ty": "float[3]",
+          "metadata": "display_name=Scale, min=0.001, step=0.01"
+        }
+      ]
+    },
+    {
+      "name": "PlayerController",
+      "properties": [
+        {
+          "name": "speed",
+          "ty": "float",
+          "metadata": "display_name=Move Speed, min=0, max=50, step=0.5"
+        },
+        {
+          "name": "jump_force",
+          "ty": "float",
+          "metadata": "display_name=Jump Force, min=0, max=30, step=0.5"
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "properties": [
+        {
+          "name": "current",
+          "ty": "float",
+          "metadata": "display_name=Current HP, min=0, max=max, step=1"
+        },
+        {
+          "name": "max",
+          "ty": "float",
+          "metadata": "display_name=Max HP, min=1, step=1"
+        },
+        {
+          "name": "regen",
+          "ty": "bool",
+          "metadata": "display_name=Regenerates"
+        }
+      ]
+    }
+  ]
+}

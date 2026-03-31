@@ -1,0 +1,19 @@
+[
+  {
+    "arguments": [
+      "clang++",
+      "-std=c++23",
+      "-shared",
+      "-fPIC",
+      "-O0",
+      "-g",
+      "-I\\\\?\\C:\\Users\\amine\\Documents\\CLI\\shadow-ide\\native\\runtime-sdk\\include",
+      "-I\\\\?\\C:\\Users\\amine\\Documents\\CLI\\shadow-ide\\native\\templates\\empty_3d\\src",
+      "-DSHADOW_DEBUG",
+      "-DSHADOW_EDITOR",
+      "\\\\?\\C:\\Users\\amine\\Documents\\CLI\\shadow-ide\\native\\templates\\empty_3d\\src\\game.cpp"
+    ],
+    "directory": "\\\\?\\C:\\Users\\amine\\Documents\\CLI\\shadow-ide\\native\\templates\\empty_3d",
+    "file": "\\\\?\\C:\\Users\\amine\\Documents\\CLI\\shadow-ide\\native\\templates\\empty_3d\\src\\game.cpp"
+  }
+]

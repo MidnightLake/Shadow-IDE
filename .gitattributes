@@ -1,0 +1,5 @@
+src-tauri/engines/**/*.so filter=lfs diff=lfs merge=lfs -text
+src-tauri/engines/**/*.node filter=lfs diff=lfs merge=lfs -text
+cli-bin/shadowai filter=lfs diff=lfs merge=lfs -text
+cli-bin/shadowai.exe filter=lfs diff=lfs merge=lfs -text
+native/templates/empty_3d/build/*.so filter=lfs diff=lfs merge=lfs -text

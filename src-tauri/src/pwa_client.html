@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShadowIDE">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2hhdW93SURFIiwic2hvcnRfbmFtZSI6IlNoYWRvd0lERSIsInN0YXJ0X3VybCI6Ii8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMGYxNzJhIiwidGhlbWVfY29sb3IiOiIjMGYxNzJhIn0=">
+<title>ShadowIDE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263348;--border:#334155;--border-dim:rgba(51,65,85,.4);
+  --text:#e2e8f0;--muted:#64748b;--accent:#6366f1;--accent-dim:rgba(99,102,241,0.15);--accent-glow:rgba(99,102,241,0.25);
+  --danger:#ef4444;--success:#22c55e;--warning:#eab308;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
+  --mono:'SF Mono','Menlo','Cascadia Code','Fira Code',monospace
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+input,textarea,button,select{font-family:inherit;color:var(--text)}
+
+.screen{display:none;flex-direction:column;height:100dvh}
+.screen.active{display:flex}
+
+/* ─── Connect ─── */
+.connect{align-items:center;justify-content:center;padding:32px 24px;gap:14px;padding-top:calc(32px + var(--safe-top))}
+.connect-logo{width:64px;height:64px;background:var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;box-shadow:0 4px 24px var(--accent-glow)}
+.connect-logo svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.connect h1{font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.5px}
+.connect p{color:var(--muted);font-size:14px;text-align:center;margin-bottom:8px}
+.connect input{width:100%;max-width:320px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:16px;outline:none;transition:border-color .15s}
+.connect input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.connect button{width:100%;max-width:320px;padding:16px;background:var(--accent);border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.connect button:active{opacity:.8}
+.connect .error{color:var(--danger);font-size:13px;min-height:20px;text-align:center}
+
+/* ─── App Shell ─── */
+.app{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* Header bar */
+.header-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 16px;padding-top:calc(8px + var(--safe-top));
+  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;min-height:44px
+}
+.header-title{font-size:15px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.header-dot.online{background:var(--success)}
+.header-dot.offline{background:var(--danger)}
+.header-btn{background:none;border:none;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.header-btn:active{background:var(--accent-dim)}
+.header-btn svg{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Tab content area — swipeable */
+.tab-content{flex:1;overflow:hidden;position:relative}
+.panel{position:absolute;inset:0;overflow:auto;display:flex;flex-direction:column;
+  transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s;will-change:transform,opacity}
+.panel.active{transform:translateX(0);opacity:1;pointer-events:auto;z-index:1}
+.panel.left{transform:translateX(-30%);opacity:0;pointer-events:none;z-index:0}
+.panel.right{transform:translateX(30%);opacity:0;pointer-events:none;z-index:0}
+
+/* Bottom tab bar — iOS-style */
+.tab-bar{
+  display:flex;background:rgba(30,41,59,.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);flex-shrink:0;
+  padding-bottom:var(--safe-bottom);
+  padding-left:var(--safe-left);padding-right:var(--safe-right)
+}
+.tab-bar button{flex:1;padding:8px 0 6px;background:none;border:none;font-size:10px;font-weight:500;
+  display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);cursor:pointer;transition:color .15s}
+.tab-bar button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab-bar button.active{color:var(--accent)}
+
+/* ─── Files ─── */
+.path-breadcrumbs{padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:4px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.path-breadcrumbs::-webkit-scrollbar{display:none}
+.crumb{padding:4px 8px;background:none;border:none;color:var(--muted);font-size:12px;font-family:var(--mono);white-space:nowrap;border-radius:6px;cursor:pointer;flex-shrink:0}
+.crumb:active{background:var(--accent-dim)}
+.crumb.current{color:var(--accent);font-weight:600}
+.crumb-sep{color:var(--border);font-size:11px;flex-shrink:0}
+
+.file-search{padding:6px 16px;border-bottom:1px solid var(--border-dim);flex-shrink:0}
+.file-search input{width:100%;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none}
+.file-search input:focus{border-color:var(--accent)}
+.file-search input::placeholder{color:var(--muted)}
+
+.file-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.file-item{padding:14px 16px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .1s}
+.file-item:active{background:var(--surface)}
+.file-icon{width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.file-icon svg{width:20px;height:20px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.file-name{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-meta{font-size:11px;color:var(--muted);flex-shrink:0}
+.empty-dir{padding:40px 16px;text-align:center;color:var(--muted);font-size:14px}
+
+/* Pull to refresh indicator */
+.pull-indicator{text-align:center;padding:12px;color:var(--accent);font-size:12px;display:none}
+
+/* ─── Editor ─── */
+.editor-header{
+  padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:44px
+}
+.editor-filename{font-size:14px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.editor-modified{color:var(--warning);font-size:11px;margin-left:4px}
+.editor-actions{display:flex;gap:6px;flex-shrink:0}
+.editor-actions button{padding:6px 14px;border:1px solid var(--border);background:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer}
+.editor-actions button:active{background:var(--accent-dim)}
+.editor-actions button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.editor-actions button.primary:active{opacity:.8}
+
+.editor-wrap{flex:1;display:flex;overflow:hidden;position:relative}
+.line-numbers{width:44px;padding:12px 0;background:var(--surface);border-right:1px solid var(--border);overflow:hidden;flex-shrink:0;
+  font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--muted);text-align:right;padding-right:8px;user-select:none}
+.editor-area{flex:1;background:var(--bg);color:var(--text);border:none;padding:12px 16px;
+  font-family:var(--mono);font-size:14px;line-height:1.6;resize:none;outline:none;
+  -webkit-text-size-adjust:none;white-space:pre;overflow:auto;tab-size:4}
+.editor-area.wrap{white-space:pre-wrap;word-break:break-all}
+.no-file{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--muted);font-size:14px;gap:8px}
+.no-file svg{width:48px;height:48px;stroke:var(--border);fill:none;stroke-width:1.2}
+
+/* ─── Terminal ─── */
+.term-wrap{flex:1;padding:2px;overflow:hidden;position:relative}
+.term-wrap .xterm{height:100%!important}
+.term-fallback{flex:1;display:flex;flex-direction:column;background:var(--bg)}
+.term-output{flex:1;padding:12px;font-family:var(--mono);font-size:13px;line-height:1.5;overflow-y:auto;white-space:pre-wrap;word-break:break-all;-webkit-overflow-scrolling:touch}
+.term-input-row{display:flex;border-top:1px solid var(--border);flex-shrink:0}
+.term-input-row input{flex:1;padding:14px;background:var(--surface);border:none;font-family:var(--mono);font-size:14px;outline:none}
+.term-input-row button{padding:14px 20px;background:var(--accent);border:none;font-size:14px;font-weight:600}
+
+/* ─── AI Chat ─── */
+.ai-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.ai-header{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.ai-header h2{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:0.5px}
+.ai-mode-selector{display:flex;background:var(--bg);padding:3px;border-radius:8px;gap:2px}
+.ai-mode-btn{padding:4px 10px;border:none;background:none;font-size:10px;font-weight:700;border-radius:6px;color:var(--muted);cursor:pointer}
+.ai-mode-btn.active{background:var(--surface2);color:var(--text)}
+
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px;-webkit-overflow-scrolling:touch}
+.ai-msg{max-width:90%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.5;position:relative;animation:ai-fade .2s ease-out}
+@keyframes ai-fade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.ai-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.ai-msg.assistant{align-self:flex-start;background:var(--surface);color:var(--text);border-bottom-left-radius:4px;border-left:3px solid var(--success)}
+.ai-msg-role{font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:4px;opacity:0.8;display:block}
+.ai-msg-content{white-space:pre-wrap;word-break:break-word}
+
+.ai-input-area{padding:12px 16px;padding-bottom:calc(12px + var(--safe-bottom));background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.ai-input-row{display:flex;gap:8px;align-items:flex-end}
+.ai-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:15px;color:var(--text);outline:none;resize:none;max-height:120px;min-height:42px}
+.ai-input:focus{border-color:var(--accent)}
+.ai-send-btn{width:42px;height:42px;border-radius:12px;background:var(--accent);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ai-send-btn:disabled{opacity:0.5;cursor:default}
+.ai-send-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5}
+
+/* ─── Landscape ─── */
+@media (orientation: landscape) and (max-height: 500px){
+  .tab-bar button{padding:6px 0 4px}
+  .tab-bar button svg{width:18px;height:18px}
+  .tab-bar button span{display:none}
+  .file-item{padding:10px 16px}
+  .header-bar{min-height:36px;padding-top:calc(4px + var(--safe-top))}
+}
+
+/* ─── Dark scrollbar ─── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- Connect Screen -->
+<div class="screen connect active" id="connectScreen">
+  <div class="connect-logo">
+    <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" opacity=".3"/></svg>
+  </div>
+  <h1>ShadowIDE</h1>
+  <p>Remote Access Client</p>
+  <div style="font-size:12px;color:#ff7b72;margin:10px 0;font-weight:600;">
+    Do NOT use "localhost" on your phone.<br/>
+    Use your PC's IP (e.g. 192.168.x.x:9876)
+  </div>
+  <input id="hostInput" type="text" placeholder="PC IP Address (e.g. 192.168.1.5:9876)" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <input id="tokenInput" type="text" placeholder="Auth token (from QR code)" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <button onclick="doConnect()">Connect</button>
+  <div class="error" id="connectErr"></div>
+</div>
+
+<!-- App Screen -->
+<div class="screen app" id="appScreen">
+  <!-- Top header -->
+  <div class="header-bar">
+    <div class="header-dot online" id="connDot"></div>
+    <span class="header-title" id="headerTitle">ShadowIDE</span>
+    <button class="header-btn" onclick="doDisconnect()" title="Disconnect">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- Tab content -->
+  <div class="tab-content" id="tabContent">
+    <!-- Files Panel -->
+    <div class="panel active" id="filesPanel" data-index="0">
+      <div class="path-breadcrumbs" id="breadcrumbs"></div>
+      <div class="file-search">
+        <input id="fileFilter" type="text" placeholder="Filter files..." oninput="filterFiles()">
+      </div>
+      <div class="pull-indicator" id="pullIndicator">Release to refresh</div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <!-- Editor Panel -->
+    <div class="panel right" id="editorPanel" data-index="1">
+      <div class="editor-header">
+        <span class="editor-filename" id="editorFilename">No file open</span>
+        <span class="editor-modified" id="modifiedDot" style="display:none">Modified</span>
+        <div class="editor-actions">
+          <button onclick="toggleWrap()" id="wrapBtn" title="Toggle word wrap">Wrap</button>
+          <button class="primary" onclick="saveFile()" id="saveBtn" style="display:none">Save</button>
+        </div>
+      </div>
+      <div class="editor-wrap" id="editorWrap">
+        <div class="no-file" id="noFile">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Tap a file to edit</span>
+        </div>
+        <div class="line-numbers" id="lineNums" style="display:none"></div>
+        <textarea class="editor-area" id="editorArea" style="display:none" spellcheck="false"
+          oninput="onEditorInput()" onscroll="syncLineScroll()"></textarea>
+      </div>
+    </div>
+
+    <!-- AI Panel -->
+    <div class="panel right" id="aiPanel" data-index="3">
+      <div class="ai-wrap">
+        <div class="ai-header">
+          <h2>SHADOW AI</h2>
+          <div class="ai-mode-selector">
+            <button class="ai-mode-btn active" id="modePlan" onclick="setAiMode('plan')">PLAN</button>
+            <button class="ai-mode-btn" id="modeBuild" onclick="setAiMode('build')">BUILD</button>
+            <button class="ai-mode-btn" id="modeAuto" onclick="setAiMode('auto')">AUTO</button>
+          </div>
+        </div>
+        <div class="ai-messages" id="aiMessages">
+          <div class="empty-dir" style="margin-top:20%">Start a conversation with ShadowAI</div>
+        </div>
+        <div class="ai-input-area">
+          <div class="ai-input-row">
+            <textarea id="aiInput" class="ai-input" placeholder="Ask ShadowAI..." rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button class="ai-send-btn" id="aiSendBtn" onclick="sendAiMessage()">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polyline points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Panel -->
+    <div class="panel right" id="terminalPanel" data-index="2">
+      <div id="termWrap" class="term-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Bottom tab bar -->
+  <div class="tab-bar" id="tabBar">
+    <button class="active" onclick="switchTab(0)" id="tabFiles">
+      <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      <span>Files</span>
+    </button>
+    <button onclick="switchTab(1)" id="tabEditor">
+      <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      <span>Editor</span>
+    </button>
+    <button onclick="switchTab(3)" id="tabAI">
+      <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 017 7v1a7 7 0 01-14 0V9a7 7 0 017-7z"/><path d="M9 22h6"/><path d="M12 17v5"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>
+      <span>AI</span>
+    </button>
+    <button onclick="switchTab(2)" id="tabTerminal">
+      <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      <span>Terminal</span>
+    </button>
+  </div>
+</div>
+
+<script>
+let ws=null,currentPath='/',openFile=null,openFileOriginal='',termId=null,term=null,fitAddon=null,xtermLoaded=false;
+let activeTab=0,cachedEntries=[],reconnectHost='',reconnectToken='';
+let aiSessionId=null,aiMode='plan',aiStreaming=false,aiMessages=[];
+
+function doConnect(){
+  const host=document.getElementById('hostInput').value.trim();
+  const token=document.getElementById('tokenInput').value.trim();
+  const err=document.getElementById('connectErr');
+  if(!host){err.textContent='Enter a host address';return}
+  err.textContent='Connecting...';
+  reconnectHost=host;reconnectToken=token;
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  try{ws=new WebSocket(proto+'//'+host)}catch(e){err.textContent='Invalid address';return}
+  ws.onopen=()=>{ws.send(JSON.stringify({type:'auth',token:token||'mobile',device_name:'Mobile Browser'}))};
+  ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data))}catch(ex){console.error(ex)}};
+  ws.onerror=()=>{err.textContent='Connection failed — check host/token and ensure server is running.'};
+  ws.onclose=()=>{
+    setConnStatus(false);
+    if(document.getElementById('appScreen').classList.contains('active')){
+      document.getElementById('headerTitle').textContent='Disconnected';
+    }
+  };
+}
+
+function doDisconnect(){
+  if(ws){ws.close();ws=null}
+  termId=null;
+  document.getElementById('connectScreen').classList.add('active');
+  document.getElementById('appScreen').classList.remove('active');
+}
+
+function setConnStatus(online){
+  const dot=document.getElementById('connDot');
+  dot.className='header-dot '+(online?'online':'offline');
+}
+
+function handleMsg(m){
+  switch(m.type){
+    case'auth.ok':
+      document.getElementById('connectScreen').classList.remove('active');
+      document.getElementById('appScreen').classList.add('active');
+      document.getElementById('headerTitle').textContent='ShadowIDE';
+      setConnStatus(true);
+      ws.send(JSON.stringify({type:'sync.getState'}));
+      // Initialize Ferrum Session
+      ws.send(JSON.stringify({type:'ferrum.getLatestSession'}));
+      break;
+    case'auth.error':document.getElementById('connectErr').textContent=m.message;break;
+    case'fs.homeDir':listDir(m.path);break;
+    case'sync.state':
+      if(m.project_root) listDir(m.project_root);
+      else ws.send(JSON.stringify({type:'fs.homeDir'}));
+      break;
+    case'fs.dirEntries':
+      cachedEntries=m.entries||[];
+      renderFiles(cachedEntries,m.request_path);
+      break;
+    case'fs.fileContent':
+      openFileContent(m.path,m.content);
+      break;
+    case'fs.ok':showToast('Saved');setModified(false);break;
+    case'term.ok':break;
+    case'term.output':
+      if(term)term.write(m.data);
+      else appendTermFallback(m.data);
+      break;
+    case'term.exit':
+      if(term)term.write('\r\n[Process exited]\r\n');
+      termId=null;break;
+    
+    // Ferrum Handlers
+    case'ferrum.session':
+      if(m.session && m.session.id) {
+        aiSessionId = m.session.id;
+        ws.send(JSON.stringify({type:'ferrum.loadMessages', sessionId: aiSessionId}));
+      } else {
+        ws.send(JSON.stringify({type:'ferrum.createSession', name: 'Mobile Chat', profile: 'Default'}));
+      }
+      break;
+    case'ferrum.messages':
+      aiMessages = m.messages || [];
+      renderAiMessages();
+      break;
+    case'ferrum.ok':
+      if(aiStreaming) { aiStreaming = false; document.getElementById('aiSendBtn').disabled = false; }
+      break;
+    
+    // Tauri Event Handlers (Streaming)
+    case'tauri.event':
+      if(m.event.startsWith('ai-chat-stream-')) {
+        const content = typeof m.payload === 'string' ? m.payload : (m.payload.content || "");
+        appendStreamingContent(content);
+      }
+      if(m.event.startsWith('ai-chat-done-')) {
+        aiStreaming = false;
+        document.getElementById('aiSendBtn').disabled = false;
+        // Optionally reload messages to ensure sync
+        if(aiSessionId) ws.send(JSON.stringify({type:'ferrum.loadMessages', sessionId: aiSessionId}));
+      }
+      break;
+
+    case'error':showToast('Error: '+m.message);break;
+  }
+}
+
+/* ─── File navigation ─── */
+function listDir(path){
+  currentPath=path;
+  renderBreadcrumbs(path);
+  document.getElementById('fileFilter').value='';
+  ws.send(JSON.stringify({type:'fs.readDir',path}));
+}
+
+function renderBreadcrumbs(path){
+  const el=document.getElementById('breadcrumbs');
+  el.innerHTML='';
+  const parts=path.split('/').filter(Boolean);
+  // Root crumb
+  const root=document.createElement('button');
+  root.className='crumb'+(parts.length===0?' current':'');
+  root.textContent='/';
+  root.onclick=()=>listDir('/');
+  el.appendChild(root);
+  let built='/';
+  parts.forEach((p,i)=>{
+    const sep=document.createElement('span');sep.className='crumb-sep';sep.textContent='›';
+    el.appendChild(sep);
+    built+=p+'/';
+    const crumb=document.createElement('button');
+    crumb.className='crumb'+(i===parts.length-1?' current':'');
+    crumb.textContent=p;
+    const target=built;
+    crumb.onclick=()=>listDir(target);
+    el.appendChild(crumb);
+  });
+  // Scroll to end
+  el.scrollLeft=el.scrollWidth;
+}
+
+function filterFiles(){
+  const q=document.getElementById('fileFilter').value.toLowerCase();
+  const filtered=q?cachedEntries.filter(e=>e.name.toLowerCase().includes(q)):cachedEntries;
+  renderFileItems(filtered,currentPath);
+}
+
+function renderFiles(entries,reqPath){
+  cachedEntries=entries;
+  currentPath=reqPath;
+  renderBreadcrumbs(reqPath);
+  renderFileItems(entries,reqPath);
+}
+
+function renderFileItems(entries,reqPath){
+  const el=document.getElementById('fileList');
+  el.innerHTML='';
+  // Parent directory
+  if(reqPath!=='/'){
+    const parent=reqPath.replace(/\/[^/]+\/?$/,'')||'/';
+    el.appendChild(makeFileItem('..','',true,()=>listDir(parent),'parent'));
+  }
+  entries.sort((a,b)=>(a.is_dir===b.is_dir?a.name.localeCompare(b.name):(a.is_dir?-1:1)));
+  if(entries.length===0&&reqPath!=='/'){el.innerHTML+='<div class="empty-dir">Empty directory</div>';return}
+  entries.forEach(e=>{
+    const size=e.is_dir?'':formatSize(e.size||0);
+    el.appendChild(makeFileItem(e.name,size,e.is_dir,()=>{
+      if(e.is_dir)listDir(e.path);
+      else{
+        document.getElementById('headerTitle').textContent=e.name;
+        ws.send(JSON.stringify({type:'fs.readFile',path:e.path}));
+      }
+    },e.is_dir?'dir':extIcon(e.name)));
+  });
+}
+
+function makeFileItem(name,meta,isDir,onclick,type){
+  const d=document.createElement('div');d.className='file-item';
+  const iconSvg=getFileIcon(type||'file');
+  d.innerHTML=`<div class="file-icon">${iconSvg}</div><span class="file-name">${esc(name)}</span>${meta?`<span class="file-meta">${meta}</span>`:''}`;
+  d.onclick=onclick;return d;
+}
+
+function getFileIcon(type){
+  const c={parent:'#64748b',dir:'#6366f1',js:'#eab308',ts:'#3b82f6',py:'#22c55e',rs:'#f97316',html:'#ef4444',css:'#a855f7',json:'#6366f1',md:'#64748b',file:'#64748b'};
+  const color=c[type]||c.file;
+  if(type==='parent')return `<svg viewBox="0 0 24 24" stroke="${color}"><polyline points="15 18 9 12 15 6"/></svg>`;
+  if(type==='dir')return `<svg viewBox="0 0 24 24" stroke="${color}"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`;
+  return `<svg viewBox="0 0 24 24" stroke="${color}"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+
+function extIcon(name){
+  const ext=name.split('.').pop().toLowerCase();
+  const map={js:'js',jsx:'js',mjs:'js',ts:'ts',tsx:'ts',py:'py',rs:'rs',html:'html',htm:'html',css:'css',scss:'css',json:'json',md:'md'};
+  return map[ext]||'file';
+}
+
+/* ─── Editor ─── */
+function openFileContent(path,content){
+  openFile=path;openFileOriginal=content;
+  const area=document.getElementById('editorArea');
+  const nums=document.getElementById('lineNums');
+  const nofile=document.getElementById('noFile');
+  area.value=content;area.style.display='';
+  nums.style.display='';nofile.style.display='none';
+  document.getElementById('saveBtn').style.display='';
+  document.getElementById('editorFilename').textContent=path.split('/').pop();
+  setModified(false);
+  updateLineNumbers();
+  switchTab(1);
+}
+
+function onEditorInput(){
+  const current=document.getElementById('editorArea').value;
+  setModified(current!==openFileOriginal);
+  updateLineNumbers();
+}
+
+function setModified(v){
+  document.getElementById('modifiedDot').style.display=v?'':'none';
+}
+
+function updateLineNumbers(){
+  const area=document.getElementById('editorArea');
+  const nums=document.getElementById('lineNums');
+  if(!area||nums.style.display==='none')return;
+  const lines=area.value.split('\n').length;
+  let html='';
+  for(let i=1;i<=lines;i++)html+=i+'\n';
+  nums.textContent=html;
+}
+
+function syncLineScroll(){
+  const area=document.getElementById('editorArea');
+  const nums=document.getElementById('lineNums');
+  if(nums)nums.scrollTop=area.scrollTop;
+}
+
+function toggleWrap(){
+  const area=document.getElementById('editorArea');
+  const btn=document.getElementById('wrapBtn');
+  area.classList.toggle('wrap');
+  btn.style.color=area.classList.contains('wrap')?'var(--accent)':'';
+}
+
+function saveFile(){
+  if(!openFile||!ws)return;
+  const content=document.getElementById('editorArea').value;
+  ws.send(JSON.stringify({type:'fs.writeFile',path:openFile,content}));
+  openFileOriginal=content;
+}
+
+/* ─── AI Chat ─── */
+function setAiMode(mode) {
+  aiMode = mode;
+  document.querySelectorAll('.ai-mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+}
+
+function renderAiMessages() {
+  const el = document.getElementById('aiMessages');
+  if (aiMessages.length === 0) {
+    el.innerHTML = '<div class="empty-dir" style="margin-top:20%">Start a conversation with ShadowAI</div>';
+    return;
+  }
+  el.innerHTML = '';
+  aiMessages.forEach(m => {
+    if (m.role === 'system') return;
+    const div = document.createElement('div');
+    div.className = 'ai-msg ' + m.role;
+    const roleSpan = document.createElement('span');
+    roleSpan.className = 'ai-msg-role';
+    roleSpan.textContent = m.role === 'user' ? 'You' : 'ShadowAI';
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'ai-msg-content';
+    contentDiv.textContent = m.content;
+    div.appendChild(roleSpan);
+    div.appendChild(contentDiv);
+    el.appendChild(div);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function sendAiMessage() {
+  const input = document.getElementById('aiInput');
+  const text = input.value.trim();
+  if (!text || aiStreaming || !ws || !aiSessionId) return;
+
+  const userMsg = { role: 'user', content: text };
+  aiMessages.push(userMsg);
+  aiMessages.push({ role: 'assistant', content: '' });
+  renderAiMessages();
+
+  input.value = '';
+  input.style.height = 'auto';
+  aiStreaming = true;
+  document.getElementById('aiSendBtn').disabled = true;
+
+  const streamId = 'mchat-' + Date.now();
+  
+  // Format messages for the backend
+  const apiMessages = aiMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+  
+  ws.send(JSON.stringify({
+    type: 'tauri.invoke',
+    cmd: 'ai_chat_with_tools',
+    args: {
+      stream_id: streamId,
+      messages: apiMessages,
+      model: null,
+      tools_enabled: true,
+      chat_mode: aiMode,
+      root_path: currentPath
+    }
+  }));
+
+  // Also save message to history
+  ws.send(JSON.stringify({
+    type: 'ferrum.saveMessage',
+    sessionId: aiSessionId,
+    message: userMsg
+  }));
+}
+
+function appendStreamingContent(content) {
+  const el = document.getElementById('aiMessages');
+  const lastMsg = aiMessages[aiMessages.length - 1];
+  if (lastMsg && lastMsg.role === 'assistant') {
+    lastMsg.content += content;
+    const lastEl = el.lastElementChild;
+    if (lastEl && lastEl.classList.contains('assistant')) {
+      lastEl.querySelector('.ai-msg-content').textContent = lastMsg.content;
+      el.scrollTop = el.scrollHeight;
+    } else {
+      renderAiMessages();
+    }
+  }
+}
+
+/* ─── Tab switching with animation ─── */
+function switchTab(index){
+  const panels=['filesPanel','editorPanel','terminalPanel','aiPanel'];
+  const buttons=[document.getElementById('tabFiles'),document.getElementById('tabEditor'),document.getElementById('tabTerminal'),document.getElementById('tabAI')];
+  const prev=activeTab;activeTab=index;
+
+  panels.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.className='panel';
+    const panelIndex = parseInt(el.getAttribute('data-index'));
+    if(panelIndex === index) el.classList.add('active');
+    else if(panelIndex < index) el.classList.add('left');
+    else el.classList.add('right');
+  });
+  buttons.forEach((b)=>{if(b) b.className=(parseInt(b.getAttribute('onclick').match(/\d/)[0])===index?'active':'')});
+
+  if(index===2)initTerminal();
+  if(index===3) {
+    document.getElementById('aiInput').focus();
+    if(aiMessages.length === 0 && aiSessionId) ws.send(JSON.stringify({type:'ferrum.loadMessages', sessionId: aiSessionId}));
+  }
+}
+
+/* ─── Swipe gestures ─── */
+let touchStartX=0,touchStartY=0,swiping=false;
+document.getElementById('tabContent').addEventListener('touchstart',e=>{
+  touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;swiping=false;
+},{passive:true});
+document.getElementById('tabContent').addEventListener('touchmove',e=>{
+  const dx=e.touches[0].clientX-touchStartX;
+  const dy=e.touches[0].clientY-touchStartY;
+  if(!swiping&&Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30)swiping=true;
+},{passive:true});
+document.getElementById('tabContent').addEventListener('touchend',e=>{
+  if(!swiping)return;
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const tabs = [0, 1, 3, 2]; // Current order in UI
+  const currIdx = tabs.indexOf(activeTab);
+  if(dx>60&&currIdx>0)switchTab(tabs[currIdx-1]);
+  else if(dx<-60&&currIdx<tabs.length-1)switchTab(tabs[currIdx+1]);
+},{passive:true});
+
+/* ─── Terminal ─── */
+function initTerminal(){
+  if(termId)return;
+  if(!xtermLoaded){loadXterm();return}
+  if(!term){
+    term=new Terminal({theme:{background:'#0f172a',foreground:'#e2e8f0',cursor:'#6366f1',selectionBackground:'rgba(99,102,241,0.3)'},
+      fontSize:14,fontFamily:"'SF Mono',Menlo,monospace",cursorBlink:true,convertEol:true,scrollback:2000});
+    fitAddon=new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('termWrap'));
+    fitAddon.fit();
+    term.onData(d=>{if(termId&&ws)ws.send(JSON.stringify({type:'term.write',id:termId,data:d}))});
+    term.onResize(s=>{if(termId&&ws)ws.send(JSON.stringify({type:'term.resize',id:termId,rows:s.rows,cols:s.cols}))});
+    window.addEventListener('resize',()=>{if(fitAddon){try{fitAddon.fit()}catch(e){}}});
+    // Re-fit when terminal tab becomes visible
+    new ResizeObserver(()=>{if(fitAddon&&activeTab===2){try{fitAddon.fit()}catch(e){}}}).observe(document.getElementById('termWrap'));
+  }
+  termId='m-'+Date.now();
+  ws.send(JSON.stringify({type:'term.create',id:termId,rows:term?term.rows:24,cols:term?term.cols:80}));
+}
+
+function loadXterm(){
+  const link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href='https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css';
+  document.head.appendChild(link);
+  const s1=document.createElement('script');
+  s1.src='https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js';
+  s1.onload=()=>{
+    const s2=document.createElement('script');
+    s2.src='https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js';
+    s2.onload=()=>{xtermLoaded=true;initTerminal()};
+    s2.onerror=()=>setupFallbackTerm();
+    document.head.appendChild(s2);
+  };
+  s1.onerror=()=>setupFallbackTerm();
+  document.head.appendChild(s1);
+}
+
+function setupFallbackTerm(){
+  const wrap=document.getElementById('termWrap');
+  wrap.innerHTML='<div class="term-fallback"><div class="term-output" id="termOutput"></div><div class="term-input-row"><input id="termInput" placeholder="command..." autocapitalize="off" spellcheck="false"><button onclick="sendCmd()">Run</button></div></div>';
+  document.getElementById('termInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendCmd()});
+  termId='m-'+Date.now();
+  ws.send(JSON.stringify({type:'term.create',id:termId,rows:24,cols:80}));
+}
+
+function sendCmd(){
+  const inp=document.getElementById('termInput');
+  if(!inp||!termId||!ws)return;
+  ws.send(JSON.stringify({type:'term.write',id:termId,data:inp.value+'\n'}));
+  inp.value='';
+}
+
+function appendTermFallback(data){
+  const el=document.getElementById('termOutput');
+  if(!el)return;
+  el.textContent+=data;
+  el.scrollTop=el.scrollHeight;
+}
+
+/* ─── Toast notifications ─── */
+function showToast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';
+    t.style.cssText='position:fixed;top:calc(12px + var(--safe-top));left:50%;transform:translateX(-50%);padding:8px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none';
+    document.body.appendChild(t)}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0'},2000);
+}
+
+/* ─── Utils ─── */
+function formatSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'K';return(b/1048576).toFixed(1)+'M'}
+function esc(s){const d=document.createElement('span');d.textContent=s;return d.innerHTML}
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+[package]
+name = "ferrum-llm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ferrum-core = { path = "../ferrum-core" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures-util = "0.3"
+sha2 = "0.10"

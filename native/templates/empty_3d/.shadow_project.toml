@@ -1,0 +1,11 @@
+name = "Empty3D"
+runtime = "cpp23"
+entry_scene = "scenes/Main.shadow"
+game_library_name = "libhello_game.so"
+
+[build]
+compiler = "clang++"
+standard = "c++23"
+include_dirs = ["../../runtime-sdk/include", "src"]
+defines = ["SHADOW_DEBUG", "SHADOW_EDITOR"]
+link_libs = []

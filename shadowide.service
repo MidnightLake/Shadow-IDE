@@ -1,0 +1,32 @@
+[Unit]
+Description=ShadowIDE — persistent AI agent server
+Documentation=https://github.com/shadowbunny/shadow-ide
+After=network-online.target graphical-session.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/Documents/Claude/CLI/shadow-ide/src-tauri/target/release/shadow-ide
+WorkingDirectory=%h/Documents/Claude/CLI/shadow-ide
+Restart=always
+RestartSec=3
+
+# Display environment — Tauri needs a display context.
+# The graphical-session.target ensures the desktop is ready.
+Environment=DISPLAY=:0
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
+
+# ShadowIDE WebSocket port — the iOS SSH tunnel forwards to this
+Environment=SHADOW_WS_PORT=9000
+Environment=RUST_LOG=info,shadow_ide=debug
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=4G
+
+# No watchdog — Tauri apps don't send sd_notify heartbeats
+
+[Install]
+WantedBy=default.target

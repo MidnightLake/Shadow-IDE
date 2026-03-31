@@ -1,0 +1,49 @@
+[scene]
+name = "MainLevel"
+version = "1.0"
+runtime = "cpp23"
+
+[[entity]]
+id = "player"
+name = "Player"
+
+  [[entity.component]]
+  type = "Transform"
+  position = [0.0, 1.0, 0.0]
+  scale = [1.0, 1.0, 1.0]
+
+  [[entity.component]]
+  type = "PlayerController"
+  speed = 5.0
+  jump_force = 8.0
+
+[[entity]]
+id = "ground"
+name = "Ground"
+
+  [[entity.component]]
+  type = "Transform"
+  position = [0.0, 0.0, 0.0]
+  rotation = [0.0, 0.0, 0.0, 1.0]
+  scale = [10.0, 1.0, 10.0]
+
+  [[entity.component]]
+  type = "MeshRenderer"
+  mesh = "assets/ground.glb#Mesh0"
+  material = "materials/terrain.shadow_mat"
+
+[[entity]]
+id = "directional_light"
+name = "DirectionalLight"
+
+  [[entity.component]]
+  type = "Transform"
+  position = [0.0, 10.0, 0.0]
+  rotation = [0.383, 0.0, 0.0, 0.924]
+  scale = [1.0, 1.0, 1.0]
+
+  [[entity.component]]
+  type = "Light"
+  kind = "directional"
+  color = [1.0, 0.95, 0.85]
+  intensity = 1.0
