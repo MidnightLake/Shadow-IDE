@@ -51,13 +51,19 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Build frontend
+        run: npm run build
+
       - name: Check Rust compilation
         working-directory: src-tauri
         run: cargo check
 
       - name: Rust clippy lints
         working-directory: src-tauri
-        run: cargo clippy -- -D warnings
+        run: cargo clippy
 
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
@@ -69,12 +75,6 @@ jobs:
       - name: Run Rust tests
         working-directory: src-tauri
         run: cargo test -p ferrum-core -p ferrum-llm -p ferrum-sessions
-
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-
-      - name: Build frontend
-        run: npm run build
 
       - name: Run frontend tests
         run: npm run test

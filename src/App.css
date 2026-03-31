@@ -133,8 +133,10 @@ body,
   height: var(--title-bar-height);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  gap: 10px;
   padding: 0 8px;
   z-index: 300;
   user-select: none;
@@ -147,6 +149,48 @@ body,
   gap: 0;
   min-width: 0;
   overflow: hidden;
+}
+
+.title-bar-center {
+  display: flex;
+  align-items: center;
+  justify-self: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: min(44vw, 560px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.title-bar-app-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.title-bar-version {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.title-bar-center-dot {
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.title-bar-center-project {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .title-bar-project {
@@ -184,23 +228,19 @@ body,
   margin-left: 4px;
 }
 
-.title-bar-label {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.5px;
-  pointer-events: none;
+.title-bar-right {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  min-width: 0;
+  gap: 6px;
 }
 
 .title-bar-shortcuts {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
-  margin-right: 6px;
+  min-width: 0;
   -webkit-app-region: no-drag;
 }
 
@@ -256,11 +296,17 @@ body,
   border-color: rgba(233, 170, 95, 0.55);
 }
 
+.title-bar-shortcut-active,
+.title-bar-shortcut-active:hover {
+  color: #ffd39a;
+  border-color: rgba(233, 170, 95, 0.7);
+  background: rgba(233, 170, 95, 0.18);
+}
+
 .title-bar-controls {
   display: flex;
   align-items: center;
   gap: 0;
-  margin-left: auto;
   -webkit-app-region: no-drag;
 }
 
@@ -2160,8 +2206,20 @@ body,
     top: var(--mobile-top-inset);
   }
 
-  .title-bar-label {
+  .title-bar-center {
+    max-width: 58vw;
+    gap: 4px;
+  }
+
+  .title-bar-app-name {
     font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .title-bar-version,
+  .title-bar-center-dot,
+  .title-bar-center-project {
+    display: none;
   }
 
   .title-bar-shortcuts {

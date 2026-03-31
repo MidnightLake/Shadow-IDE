@@ -18,7 +18,7 @@ const defaultProps = {
 describe("TitleBar", () => {
   it("renders project name from rootPath", () => {
     render(<TitleBar {...defaultProps} />);
-    expect(screen.getByText("my-project")).toBeInTheDocument();
+    expect(screen.getAllByText("my-project").length).toBeGreaterThan(0);
   });
 
   it("shows / when rootPath is /", () => {
@@ -28,7 +28,13 @@ describe("TitleBar", () => {
 
   it("renders version label", () => {
     render(<TitleBar {...defaultProps} />);
-    expect(screen.getByText("ShadowIDE v0.84.0")).toBeInTheDocument();
+    expect(screen.getByText("ShadowIDE")).toBeInTheDocument();
+    expect(screen.getByText("v0.84.0")).toBeInTheDocument();
+  });
+
+  it("renders project name from Windows paths", () => {
+    render(<TitleBar {...defaultProps} rootPath={"C:\\Users\\amine\\Documents\\CLI\\shadow-ide"} />);
+    expect(screen.getAllByText("shadow-ide").length).toBeGreaterThan(0);
   });
 
   it("shows active file name when file is open", () => {

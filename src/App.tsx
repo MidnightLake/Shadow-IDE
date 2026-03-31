@@ -159,6 +159,7 @@ function App() {
   const [gameViewportVisible, setGameViewportVisible] = useState(saved.gameViewportVisible ?? true);
   const [gameViewportWidth, setGameViewportWidth] = useState(saved.gameViewportWidth ?? 560);
   const [resizingGameViewport, setResizingGameViewport] = useState(false);
+  const [planengineLaunchpadVisible, setPlanengineLaunchpadVisible] = useState(false);
   const [preferredPlanengineDoc, setPreferredPlanengineDoc] = useState<IntegratedPlanengineDocKey>("plan");
   const [planengineShellSummary, setPlanengineShellSummary] = useState<PlanengineShellSummary | null>(null);
 
@@ -194,9 +195,9 @@ function App() {
   const activeIntegratedPlanDocKey = getIntegratedPlanengineDocKey(activeFile?.path);
   const isLiveViewportTab = Boolean(activeFile && isGameDevLiveViewPath(activeFile.path));
   const isIntegratedPlanDocActive = Boolean(activeFile && isIntegratedPlanengineDocPath(activeFile.path));
-  const showPlanengineLaunchpad = !activeFile && hasShadowProject;
+  const showPlanengineLaunchpad = planengineLaunchpadVisible && hasShadowProject && !isLiveViewportTab && !isIntegratedPlanDocActive;
   const showDockedGameViewport = !isMobileDevice && hasShadowProject && gameViewportVisible && !isLiveViewportTab;
-  const showGameViewportLauncher = !isMobileDevice && hasShadowProject && !isLiveViewportTab && !isIntegratedPlanDocActive;
+  const showGameViewportLauncher = !isMobileDevice && hasShadowProject && !isLiveViewportTab && !isIntegratedPlanDocActive && !showPlanengineLaunchpad;
 
   const loadTextFile = useCallback(async (filePath: string, size: number) => {
     if (!isMobileDevice || size <= 256 * 1024) {
@@ -220,6 +221,7 @@ function App() {
   }, []);
 
   const openVirtualFile = useCallback((path: string, name: string, content = "") => {
+    setPlanengineLaunchpadVisible(false);
     const existingIndex = openFiles.findIndex((file) => file.path === path);
     if (existingIndex !== -1) {
       dispatch({ type: "SET_ACTIVE_FILE_INDEX", payload: existingIndex });
@@ -250,6 +252,7 @@ function App() {
     try {
       const info = await invoke<{ size: number; is_binary: boolean }>("get_file_info", { path: filePath });
       if (!info.is_binary && info.size <= 50 * 1024 * 1024) {
+        setPlanengineLaunchpadVisible(false);
         const content = await loadTextFile(filePath, info.size);
         dispatch({ type: "UPDATE_OPEN_FILES", payload: (prev) => [...prev, { path: filePath, name: fileName, content, modified: false, size: info.size }] });
         return true;
@@ -380,6 +383,20 @@ function App() {
       resetSidebarTimer();
     }
   }, [closeIntegratedPlanengineTabs, dispatch, panelZones.planengine, resetSidebarTimer, sidebarAutoHide]);
+
+  const togglePlanengineLaunchpad = useCallback(() => {
+    if (!hasShadowProject) {
+      focusIntegratedPlanengineDoc("plan");
+      return;
+    }
+
+    const nextVisible = !planengineLaunchpadVisible;
+    setPlanengineLaunchpadVisible(nextVisible);
+
+    if (nextVisible) {
+      focusIntegratedPlanengineDoc("plan");
+    }
+  }, [focusIntegratedPlanengineDoc, hasShadowProject, planengineLaunchpadVisible]);
 
   useEffect(() => {
     if (!sidebarAutoHide) {
@@ -589,6 +606,7 @@ function App() {
 
   const openProject = useCallback(
     async (path: string) => {
+      setPlanengineLaunchpadVisible(false);
       await saveProjectState();
       try { await invoke("project_open", { path }); loadRecentProjects(); } catch { /* ignore */ }
       try {
@@ -630,6 +648,7 @@ function App() {
 
   const handleFileOpen = useCallback(
     async (path: string, name: string) => {
+      setPlanengineLaunchpadVisible(false);
       if (isMobileDevice) { dispatch({ type: "SET_LEFT_VIEW", payload: null }); dispatch({ type: "SET_RIGHT_VIEW", payload: null }); }
       const integratedDoc = getIntegratedPlanengineDocKey(path);
       if (integratedDoc) {
@@ -657,10 +676,12 @@ function App() {
   );
 
   const openFullGameViewport = useCallback(() => {
+    setPlanengineLaunchpadVisible(false);
     openVirtualFile(GAMEDEV_LIVE_VIEW_PATH, GAMEDEV_LIVE_VIEW_NAME);
   }, [openVirtualFile]);
 
   const focusGameDevTab = useCallback((tab: GameDevTab, options?: { openLiveView?: boolean }) => {
+    setPlanengineLaunchpadVisible(false);
     everVisited.current.add("gamedev");
     const zone = panelZones.gamedev;
     if (zone === "left") {
@@ -737,6 +758,7 @@ function App() {
   );
 
   const dismissIntegratedPlanDoc = useCallback(() => {
+    setPlanengineLaunchpadVisible(false);
     void handleFileClose(activeFileIndex);
   }, [activeFileIndex, handleFileClose]);
 
@@ -1218,7 +1240,8 @@ function App() {
         isMobileDevice={isMobileDevice}
         appWindow={appWindow}
         planSummary={planengineShellSummary ?? undefined}
-        onOpenPlanengine={() => focusIntegratedPlanengineDoc("plan")}
+        planLaunchpadVisible={showPlanengineLaunchpad}
+        onOpenPlanengine={togglePlanengineLaunchpad}
         onOpenGamePanel={() => focusGameDevTab("overview")}
         onOpenLiveView={() => focusGameDevTab("overview", { openLiveView: true })}
       />

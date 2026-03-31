@@ -579,7 +579,21 @@ pub fn scan_local_models(base_path: String) -> Result<Vec<LocalModel>, String> {
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
     if !home.is_empty() {
+        #[cfg(windows)]
         let mut scan_dirs = vec![
+            // LM Studio models
+            format!("{}/.lmstudio/models", home),
+            format!("{}/.cache/lm-studio/models", home),
+            // Shadow IDE models
+            format!("{}/.local/share/shadow-ide/models", home),
+            // Ollama models (blob storage)
+            format!("{}/.ollama/models/blobs", home),
+            // Common user model directories
+            format!("{}/models", home),
+            format!("{}/Models", home),
+        ];
+        #[cfg(not(windows))]
+        let scan_dirs = vec![
             // LM Studio models
             format!("{}/.lmstudio/models", home),
             format!("{}/.cache/lm-studio/models", home),
@@ -605,7 +619,6 @@ pub fn scan_local_models(base_path: String) -> Result<Vec<LocalModel>, String> {
                 scan_dirs.push(format!("{}/Models", userprofile));
             }
         }
-        let scan_dirs = scan_dirs;
 
         for dir_path in &scan_dirs {
             let dir = Path::new(dir_path);
